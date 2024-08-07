@@ -1,0 +1,14 @@
+env: "local" # "prod"
+grpc:
+  port: 44044
+  timeout: 10h
+migrations_path: migrations
+database_url:
+  meow: $DATABASE_FULLNAME
+  fullname: "root:shlyapa228123@tcp(localhost:3306)/userdb?parseTime=true"
+  # fullname: "root:password@tcp(localhost:3306)/userdb?parseTime=true"
+  port: 3306
+  host: mysql
+  user: root
+  password: root
+  db_name: userdb

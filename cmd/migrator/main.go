@@ -20,6 +20,7 @@ func main() {
 
 	flag.StringVar(&migrationsPath, "migrations-path", "", "path to migrations")
 	// flag.Parse()
+
 	cfg := config.MustLoad()
 	var DBUrl string
 	log.Println(cfg.Env)

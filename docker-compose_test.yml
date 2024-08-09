@@ -1,0 +1,38 @@
+services:
+  mysql:
+      image: mysql:latest
+      container_name: chat-mysql
+      expose:
+        - "3306"
+      environment:
+          MYSQL_ROOT_PASSWORD: $DB_PASSWORD
+          MYSQL_DATABASE: $DB_NAME
+      volumes:
+        - test_chat_mysql_vol:/var/lib/mysql
+      restart: always
+      healthcheck:
+            test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+            interval: 3s
+            timeout: 20s
+            retries: 10
+  sso:
+    image: sso_test:local
+    container_name: sso
+    build:
+      dockerfile: test.Dockerfile
+    ports:
+      - "443:443"
+    restart: always
+    volumes:
+      - chat_vol:/var/
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t
+    depends_on:
+      # - migrator
+      #  mysql:
+      #   condition: service_healthy
+       - mysql
+volumes:
+  test_chat_mysql_vol:
+  chat_vol:
+  

@@ -2,8 +2,11 @@ package authgrpc
 
 import (
 	"context"
+	"errors"
 
 	"github.com/Novochenko/protos/gen/go/sso"
+	"github.com/Novochenko/sso/internal/services/auth"
+	"github.com/Novochenko/sso/internal/storage"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -14,14 +17,14 @@ type Auth interface {
 		ctx context.Context,
 		email string,
 		password string,
-		appID int,
+		appID string,
 	) (token string, err error)
 	RegisterNewUser(
 		ctx context.Context,
 		email string,
 		password string,
-	) (userID int64, err error)
-	IsAdmin(ctx context.Context, userID int64) (bool, error)
+	) (userID string, err error)
+	IsAdmin(ctx context.Context, userID string) (bool, error)
 }
 
 type serverAPI struct {
@@ -41,8 +44,11 @@ func (s *serverAPI) Login(ctx context.Context, req *sso.LoginRequest) (*sso.Logi
 	if err := validateLogin(req); err != nil {
 		return nil, err
 	}
-	token, err := s.auth.Login(ctx, req.GetEmail(), req.GetPassword(), int(req.GetAppId()))
+	token, err := s.auth.Login(ctx, req.GetEmail(), req.GetPassword(), req.GetAppId())
 	if err != nil {
+		if errors.Is(err, auth.ErrInvalidCredentials) {
+			return nil, status.Error(codes.InvalidArgument, "invalid email or password")
+		}
 		return nil, status.Error(codes.Internal, "internal error")
 	}
 	return &sso.LoginResponse{
@@ -56,6 +62,9 @@ func (s *serverAPI) Register(ctx context.Context, req *sso.RegisterRequest) (*ss
 	}
 	userID, err := s.auth.RegisterNewUser(ctx, req.GetEmail(), req.GetPassword())
 	if err != nil {
+		if errors.Is(err, storage.ErrUserExists) {
+			return nil, status.Error(codes.AlreadyExists, "user already exists")
+		}
 		return nil, status.Error(codes.Internal, "internal error")
 	}
 	return &sso.RegisterResponse{
@@ -76,7 +85,7 @@ func (s *serverAPI) IsAdmin(ctx context.Context, req *sso.IsAdminRequest) (*sso.
 	}, nil
 }
 func validateIsAdmin(req *sso.IsAdminRequest) error {
-	if req.UserId == emptyValue {
+	if req.UserId == "" {
 		return status.Error(codes.InvalidArgument, "user_id is required")
 	}
 	return nil
@@ -99,7 +108,7 @@ func validateLogin(req *sso.LoginRequest) error {
 	if req.GetPassword() == "" {
 		return status.Error(codes.InvalidArgument, "password is required")
 	}
-	if req.GetAppId() == emptyValue {
+	if req.GetAppId() == "" {
 		return status.Error(codes.InvalidArgument, "app_id is required")
 	}
 	return nil

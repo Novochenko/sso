@@ -1,0 +1,24 @@
+---
+
+services:
+  mysql:
+      image: mysql:latest
+      container_name: chat-mysql
+      expose:
+        - "3306"
+      environment:
+          MYSQL_ROOT_PASSWORD: $DB_PASSWORD
+          MYSQL_DATABASE: $DB_NAME
+      volumes:
+        - test_chat_mysql_vol:/var/lib/mysql
+      restart: always
+  migrator:
+    image: migrator_test:local
+    container_name: migrator
+    restart: always
+    depends_on:
+      - mysql
+volumes:
+  test_chat_mysql_vol:
+  chat_vol:
+  

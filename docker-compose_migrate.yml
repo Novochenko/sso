@@ -10,27 +10,15 @@ services:
           MYSQL_ROOT_PASSWORD: $DB_PASSWORD
           MYSQL_DATABASE: $DB_NAME
       volumes:
-        - chat_mysql_vol:/var/lib/mysql
+        - test_chat_mysql_vol:/var/lib/mysql
       restart: always
-  # migrator:
-  #   image: migrator:local
-  #   container_name: migrator
-  #   restart: always
-  #   depends_on:
-  #     - mysql
-  sso:
-    image: sso:local
-    container_name: sso
-    ports:
-      - "443:443"
+  migrator:
+    image: migrator:local
+    container_name: migrator
     restart: always
-    volumes:
-      - chat_vol:/var/
     depends_on:
-      # - migrator
       - mysql
 volumes:
   chat_mysql_vol:
-  chat_redis_vol:
   chat_vol:
   

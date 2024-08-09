@@ -17,6 +17,8 @@ FROM alpine AS runner
 
 COPY --from=builder /usr/local/src/bin/migrator /
 COPY config/config.yaml /config.yaml
-COPY migrations /migrations
+# COPY migrations /migrations
+COPY tests/migrations /migrations
+# COPY ["configs/apiserver/config.yaml","images", "security", "migrations", "./"]
 
 CMD ["/main", "--config=./config.yaml", "--migrations-path=migrations"]

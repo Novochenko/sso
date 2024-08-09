@@ -26,21 +26,21 @@ func New(storagePath string) (*Storage, error) {
 	return &Storage{db: db}, nil
 }
 
-func (s *Storage) SaveUser(ctx context.Context, email string, passHash []byte) (uuid.UUID, error) {
+func (s *Storage) SaveUser(ctx context.Context, email string, passHash []byte) (string, error) {
 	const op = "storage.mysql.SaveUser"
 
 	stmt, err := s.db.Prepare("INSERT INTO users(id, email, pass_hash) VALUES(?, ?)")
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("%s: %w", op, err)
+		return "", fmt.Errorf("%s: %w", op, err)
 	}
 
 	uuID := uuid.New()
 	_, err = stmt.ExecContext(ctx, uuID, email, passHash)
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("%s: %w", op, err)
+		return "", fmt.Errorf("%s: %w", op, err)
 	}
 
-	return uuID, nil
+	return uuID.String(), nil
 }
 
 func (s *Storage) User(ctx context.Context, email string) (models.User, error) {
@@ -65,10 +65,10 @@ func (s *Storage) User(ctx context.Context, email string) (models.User, error) {
 	return user, nil
 }
 
-func (s *Storage) App(ctx context.Context, id int) (models.App, error) {
+func (s *Storage) App(ctx context.Context, id string) (models.App, error) {
 	const op = "storage.mysql.App"
 
-	stmt, err := s.db.Prepare("SELECT id, name, secret FROM apps WHERE id = ?")
+	stmt, err := s.db.Prepare("SELECT id, name, secret FROM apps WHERE id = UUID_TO_BIN(?)")
 	if err != nil {
 		return models.App{}, fmt.Errorf("%s: %w", op, err)
 	}
@@ -88,7 +88,7 @@ func (s *Storage) App(ctx context.Context, id int) (models.App, error) {
 	return app, nil
 }
 
-func (s *Storage) IsAdmin(ctx context.Context, userID uuid.UUID) (bool, error) {
+func (s *Storage) IsAdmin(ctx context.Context, userID string) (bool, error) {
 	const op = "storage.mysql.IsAdmin"
 
 	stmt, err := s.db.Prepare("SELECT is_admin FROM users WHERE id = UUID_TO_BIN(?)")
@@ -96,7 +96,7 @@ func (s *Storage) IsAdmin(ctx context.Context, userID uuid.UUID) (bool, error) {
 		return false, fmt.Errorf("%s: %w", op, err)
 	}
 
-	row := stmt.QueryRowContext(ctx, userID.String())
+	row := stmt.QueryRowContext(ctx, userID)
 
 	var isAdmin bool
 

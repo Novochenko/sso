@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/Novochenko/sso/internal/domain/models"
+	"github.com/Novochenko/sso/domain/models"
 	"github.com/Novochenko/sso/internal/lib/jwt"
 	"github.com/Novochenko/sso/internal/lib/logger/sl"
 	"github.com/Novochenko/sso/internal/storage"

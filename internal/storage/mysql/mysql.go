@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/Novochenko/sso/internal/domain/models"
+	"github.com/Novochenko/sso/domain/models"
 	"github.com/Novochenko/sso/internal/storage"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"

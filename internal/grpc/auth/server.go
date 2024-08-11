@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"github.com/Novochenko/protos/gen/go/sso"
-	"github.com/Novochenko/sso/internal/domain/models"
+	"github.com/Novochenko/sso/domain/models"
 	"github.com/Novochenko/sso/internal/services/auth"
 	"github.com/Novochenko/sso/internal/storage"
 	"google.golang.org/grpc"

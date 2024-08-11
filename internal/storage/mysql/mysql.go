@@ -29,7 +29,7 @@ func New(storagePath string) (*Storage, error) {
 func (s *Storage) SaveUser(ctx context.Context, email string, passHash []byte) (string, error) {
 	const op = "storage.mysql.SaveUser"
 
-	stmt, err := s.db.Prepare("INSERT INTO users(id, email, pass_hash) VALUES(?, ?)")
+	stmt, err := s.db.Prepare("INSERT INTO users(id, email, pass_hash) VALUES(?, ?, ?)")
 	if err != nil {
 		return "", fmt.Errorf("%s: %w", op, err)
 	}
@@ -65,10 +65,10 @@ func (s *Storage) User(ctx context.Context, email string) (models.User, error) {
 	return user, nil
 }
 
-func (s *Storage) App(ctx context.Context, id string) (models.App, error) {
+func (s *Storage) App(ctx context.Context, id int64) (models.App, error) {
 	const op = "storage.mysql.App"
 
-	stmt, err := s.db.Prepare("SELECT id, name, secret FROM apps WHERE id = UUID_TO_BIN(?)")
+	stmt, err := s.db.Prepare("SELECT id, name, secret FROM apps WHERE id = ?")
 	if err != nil {
 		return models.App{}, fmt.Errorf("%s: %w", op, err)
 	}
@@ -91,7 +91,7 @@ func (s *Storage) App(ctx context.Context, id string) (models.App, error) {
 func (s *Storage) IsAdmin(ctx context.Context, userID string) (bool, error) {
 	const op = "storage.mysql.IsAdmin"
 
-	stmt, err := s.db.Prepare("SELECT is_admin FROM users WHERE id = UUID_TO_BIN(?)")
+	stmt, err := s.db.Prepare("SELECT is_admin FROM users WHERE id = ?")
 	if err != nil {
 		return false, fmt.Errorf("%s: %w", op, err)
 	}
@@ -110,4 +110,25 @@ func (s *Storage) IsAdmin(ctx context.Context, userID string) (bool, error) {
 	}
 
 	return isAdmin, nil
+}
+
+func (s *Storage) UserAccountById(ctx context.Context, userID uuid.UUID) (models.UserAccount, error) {
+	const op = "storage.mysql.UserByID"
+	stmt, err := s.db.Prepare("SELECT id, username, pfp_path FROM users WHERE id = ?")
+	if err != nil {
+		return models.UserAccount{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	row := stmt.QueryRowContext(ctx, userID)
+	var userAccount models.UserAccount
+	err = row.Scan(&userAccount.UserId, &userAccount.UserName, &userAccount.ProfilePicturePath)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return models.UserAccount{}, fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)
+		}
+
+		return models.UserAccount{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return userAccount, nil
 }

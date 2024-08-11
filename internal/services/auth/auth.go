@@ -11,6 +11,8 @@ import (
 	"github.com/Novochenko/sso/internal/lib/jwt"
 	"github.com/Novochenko/sso/internal/lib/logger/sl"
 	"github.com/Novochenko/sso/internal/storage"
+	mysqlDriver "github.com/go-sql-driver/mysql"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -23,11 +25,16 @@ type Auth struct {
 	userSaver    UserSaver
 	userProvider UserProvider
 	appProvider  AppProvider
+	userFinder   UserFinder
 	tokenTTL     time.Duration
 }
 
 type UserSaver interface {
 	SaveUser(ctx context.Context, email string, passHash []byte) (uid string, err error)
+}
+
+type UserFinder interface {
+	UserAccountById(ctx context.Context, userID uuid.UUID) (models.UserAccount, error)
 }
 
 type UserProvider interface {
@@ -36,7 +43,7 @@ type UserProvider interface {
 }
 
 type AppProvider interface {
-	App(ctx context.Context, appID string) (models.App, error)
+	App(ctx context.Context, appID int64) (models.App, error)
 }
 
 func New(
@@ -44,18 +51,20 @@ func New(
 	userSaver UserSaver,
 	userProvider UserProvider,
 	appProvider AppProvider,
+	userFinder UserFinder,
 	tokenTTL time.Duration,
 ) *Auth {
 	return &Auth{
 		userSaver:    userSaver,
 		userProvider: userProvider,
 		appProvider:  appProvider,
+		userFinder:   userFinder,
 		log:          log,
 		tokenTTL:     tokenTTL,
 	}
 }
 
-func (a *Auth) Login(ctx context.Context, email, password string, appID string) (string, error) {
+func (a *Auth) Login(ctx context.Context, email, password string, appID int64) (string, error) {
 	const op = "auth.Login"
 	log := a.log.With(
 		slog.String("op", op),
@@ -107,6 +116,10 @@ func (a *Auth) RegisterNewUser(ctx context.Context, email, password string) (str
 	}
 	id, err := a.userSaver.SaveUser(ctx, email, hashedPass)
 	if err != nil {
+		var mysqlErr *mysqlDriver.MySQLError
+		if errors.As(err, &mysqlErr) && mysqlErr.Number == 1062 {
+			return "", fmt.Errorf("%s: %w", op, storage.ErrUserExists)
+		}
 		log.Error("failed to save user")
 		return "", fmt.Errorf("%s: %w", op, err)
 	}
@@ -133,4 +146,24 @@ func (a *Auth) IsAdmin(ctx context.Context, userID string) (bool, error) {
 	log.Info("checked if user is admin", slog.Bool("is_admin", isAdmin))
 
 	return isAdmin, nil
+}
+
+func (a *Auth) FindUser(ctx context.Context, userID string) (models.UserAccount, error) {
+	const op = "Auth.Find"
+
+	log := a.log.With(
+		slog.String("op", op),
+		slog.String("user_id", userID),
+	)
+
+	log.Info("checking if user exists")
+	uuID, err := uuid.Parse(userID)
+	if err != nil {
+		return models.UserAccount{}, fmt.Errorf("%s: %w", op, err)
+	}
+	userAccount, err := a.userFinder.UserAccountById(ctx, uuID)
+	if err != nil {
+		return models.UserAccount{}, fmt.Errorf("%s: %w", op, err)
+	}
+	return userAccount, nil
 }

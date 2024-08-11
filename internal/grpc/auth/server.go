@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/Novochenko/protos/gen/go/sso"
+	"github.com/Novochenko/sso/internal/domain/models"
 	"github.com/Novochenko/sso/internal/services/auth"
 	"github.com/Novochenko/sso/internal/storage"
 	"google.golang.org/grpc"
@@ -17,7 +18,7 @@ type Auth interface {
 		ctx context.Context,
 		email string,
 		password string,
-		appID string,
+		appID int64,
 	) (token string, err error)
 	RegisterNewUser(
 		ctx context.Context,
@@ -25,6 +26,7 @@ type Auth interface {
 		password string,
 	) (userID string, err error)
 	IsAdmin(ctx context.Context, userID string) (bool, error)
+	FindUser(ctx context.Context, userID string) (models.UserAccount, error)
 }
 
 type serverAPI struct {
@@ -72,6 +74,24 @@ func (s *serverAPI) Register(ctx context.Context, req *sso.RegisterRequest) (*ss
 	}, nil
 }
 
+func (s *serverAPI) Find(ctx context.Context, req *sso.FindRequest) (*sso.FindResponse, error) {
+	if req.GetUserId() == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id is required")
+	}
+	userAccount, err := s.auth.FindUser(ctx, req.GetUserId())
+	if err != nil {
+		if errors.Is(err, storage.ErrUserNotFound) {
+			return nil, status.Error(codes.NotFound, "user not found")
+		}
+		return nil, status.Error(codes.Internal, "internal error")
+	}
+
+	return &sso.FindResponse{UserAccount: &sso.UserAccount{
+		UserId:   userAccount.UserId.String(),
+		UserName: userAccount.UserName,
+	}}, nil
+}
+
 func (s *serverAPI) IsAdmin(ctx context.Context, req *sso.IsAdminRequest) (*sso.IsAdminResponse, error) {
 	if err := validateIsAdmin(req); err != nil {
 		return nil, err
@@ -108,7 +128,7 @@ func validateLogin(req *sso.LoginRequest) error {
 	if req.GetPassword() == "" {
 		return status.Error(codes.InvalidArgument, "password is required")
 	}
-	if req.GetAppId() == "" {
+	if req.GetAppId() == emptyValue {
 		return status.Error(codes.InvalidArgument, "app_id is required")
 	}
 	return nil

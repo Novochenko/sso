@@ -25,7 +25,7 @@ type Suite struct {
 func New(t *testing.T) (context.Context, *Suite) {
 	t.Helper()
 	t.Parallel()
-	cfg := config.MustLoadPath("/config.yaml")
+	cfg := config.MustLoadPath("/home/egor/DEV/apartment_building_app/sso/config/config.yaml")
 	// cfg := config.MustLoad()
 
 	ctx, cancelCtx := context.WithTimeout(context.Background(), cfg.GRPC.Timeout)

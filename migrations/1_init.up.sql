@@ -8,7 +8,7 @@ CREATE INDEX idx_email ON users(email);
 
 CREATE TABLE IF NOT EXISTS apps
 (
-    id     BINARY(16) PRIMARY KEY,
+    id     INT PRIMARY KEY,
     name   VARCHAR(30) NOT NULL UNIQUE,
     secret VARCHAR(60) NOT NULL UNIQUE
 );

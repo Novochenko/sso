@@ -12,13 +12,18 @@ services:
       volumes:
         - test_chat_mysql_vol:/var/lib/mysql
       restart: always
+      healthcheck:
+            test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+            interval: 3s
+            timeout: 20s
+            retries: 10
   migrator:
     image: migrator_test:local
     container_name: migrator
     restart: always
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
 volumes:
   test_chat_mysql_vol:
-  chat_vol:
   

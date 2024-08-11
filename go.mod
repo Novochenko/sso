@@ -3,7 +3,7 @@ module github.com/Novochenko/sso
 go 1.22.4
 
 require (
-	github.com/Novochenko/protos v0.0.3
+	github.com/Novochenko/protos v0.0.5
 	github.com/brianvoe/gofakeit v3.18.0+incompatible
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/golang-jwt/jwt/v5 v5.2.1

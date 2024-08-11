@@ -19,12 +19,13 @@ func New(
 	storagePath string,
 	tokenTTL time.Duration,
 ) *App {
+
 	storage, err := mysql.New(storagePath)
 	if err != nil {
 		panic(err)
 	}
 
-	authService := auth.New(log, storage, storage, storage, tokenTTL)
+	authService := auth.New(log, storage, storage, storage, storage, tokenTTL)
 
 	grpcApp := grpcapp.New(log, authService, grpcPort)
 	return &App{

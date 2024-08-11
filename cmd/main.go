@@ -22,8 +22,8 @@ func main() {
 
 	log := setupLogger(cfg.Env)
 	fmt.Println(cfg)
-
-	application := app.New(log, cfg.GRPC.Port, cfg.StoragePath.FullName, cfg.TokenTTL)
+	dbURL := DBUrlSetup(cfg)
+	application := app.New(log, cfg.GRPC.Port, dbURL, cfg.TokenTTL)
 
 	go application.GRPCServer.MustRun()
 
@@ -40,7 +40,7 @@ func setupLogger(env string) *slog.Logger {
 
 	switch env {
 	case envLocal:
-		slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})
+		log = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
 	case envDev:
 		log = slog.New(
 			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
@@ -52,4 +52,18 @@ func setupLogger(env string) *slog.Logger {
 	}
 
 	return log
+}
+
+func DBUrlSetup(cfg *config.Config) (DBUrl string) {
+	// DBUrl = fmt.Sprintf("%s:%s@tcp(%s)/%s?multiStatements=true&parseTime=true", //multiStatements=true&
+	// 	cfg.StoragePath.User,
+	// 	cfg.StoragePath.Password,
+	// 	cfg.StoragePath.Host,
+	// 	cfg.StoragePath.DBName)
+	DBUrl = fmt.Sprintf("%s:%s@tcp(%s)/%s?multiStatements=true&parseTime=true", //multiStatements=true&
+		cfg.StoragePath.User,
+		cfg.StoragePath.Password,
+		cfg.StoragePath.Host,
+		cfg.StoragePath.DBName)
+	return
 }

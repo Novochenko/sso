@@ -8,6 +8,8 @@ import (
 	"github.com/Novochenko/sso/domain/models"
 	"github.com/Novochenko/sso/internal/services/auth"
 	"github.com/Novochenko/sso/internal/storage"
+	validation "github.com/go-ozzo/ozzo-validation"
+	"github.com/go-ozzo/ozzo-validation/is"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -112,12 +114,21 @@ func validateIsAdmin(req *sso.IsAdminRequest) error {
 }
 
 func validateRegister(req *sso.RegisterRequest) error {
-	if req.GetEmail() == "" {
+	err := validation.ValidateStruct(
+		req,
+		validation.Field(req.Email, validation.Required, is.Email),
+	)
+	if err != nil {
 		return status.Error(codes.InvalidArgument, "email is required")
 	}
-	if req.GetPassword() == "" {
+	err = validation.ValidateStruct(
+		req,
+		validation.Field(req.Password, validation.NilOrNotEmpty),
+	)
+	if err != nil {
 		return status.Error(codes.InvalidArgument, "password is required")
 	}
+
 	return nil
 }
 
